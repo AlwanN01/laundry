@@ -52,7 +52,7 @@ const AuthForm: FC<Props> = ({ variant }) => {
     <div className="w-full rounded-lg border-2 shadow sm:max-w-md md:mt-0 xl:p-0">
       <div className="space-y-4 p-6 sm:p-8 md:space-y-6">
         <h1 className="text-center text-xl font-bold leading-tight tracking-tight md:text-2xl">
-          {variant == "register" ? "Sign up to your account" : "Sign in"}
+          {variant == "register" ? "Sign up" : "Sign in"}
         </h1>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

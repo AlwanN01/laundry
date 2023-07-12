@@ -7,7 +7,7 @@ type Props = {}
 
 const UserExample: FC<Props> = ({}) => {
   const { data: session, status } = useSession()
-  return <pre>{JSON.stringify(session, null, 2)}</pre>
+  return <pre>{(session && JSON.stringify(session, null, 2)) || ""}</pre>
 }
 
 export { UserExample }
