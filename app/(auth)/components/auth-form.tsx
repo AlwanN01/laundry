@@ -1,86 +1,124 @@
+"use client"
+
 import { type FC } from "react"
+import { useRouter } from "next/navigation"
+import { trySubmit } from "@/utils/try-catch"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { signIn } from "next-auth/react"
+import { useForm } from "react-hook-form"
 
+import api from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 
-type Props = {}
+import { submitRegister } from "../actions/register"
+import { LoginSchema, RegisterSchema, loginSchema, registerSchema } from "../schemas/auth-schema"
 
-const AuthForm: FC<Props> = ({}) => {
+type Props = {
+  variant: "register" | "login"
+}
+
+const AuthForm: FC<Props> = ({ variant }) => {
+  const router = useRouter()
+  const form = useForm<RegisterSchema | LoginSchema>({
+    resolver: zodResolver(variant == "register" ? registerSchema : loginSchema),
+    defaultValues: { name: "", email: "", password: "" },
+  })
+  const onSubmit = trySubmit(
+    async (values) => {
+      if (variant == "register") {
+        // const user = await api.auth.register(values) // client action
+        const user = await submitRegister(values as RegisterSchema) // server action
+        router.push("/sign-in")
+      } else {
+        const res = await signIn("credentials", { ...(values as LoginSchema), redirect: false })
+        if (res?.error) throw new Error(res.error)
+        router.push("/")
+        setTimeout(() => router.refresh(), 100)
+      }
+    },
+    { success: variant == "register" ? "Success Registered" : "Login Success" }
+  )
+
   return (
-    <div className="w-full rounded-lg border bg-card text-card-foreground shadow sm:max-w-md md:mt-0 xl:p-0">
+    <div className="w-full rounded-lg border-2 shadow sm:max-w-md md:mt-0 xl:p-0">
       <div className="space-y-4 p-6 sm:p-8 md:space-y-6">
-        <h1 className="text-xl font-bold leading-tight tracking-tight md:text-2xl">
-          Sign in to your account
+        <h1 className="text-center text-xl font-bold leading-tight tracking-tight md:text-2xl">
+          {variant == "register" ? "Sign up to your account" : "Sign in"}
         </h1>
-        <form className="space-y-4 md:space-y-6" action="#">
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-            >
-              Your email
-            </label>
-            <input
-              type="email"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {variant == "register" && (
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <FormField
+              control={form.control}
               name="email"
-              id="email"
-              className="focus:ring-primary-600 focus:border-primary-600 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500 sm:text-sm"
-              placeholder="name@company.com"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-            >
-              Password
-            </label>
-            <input
-              type="password"
+            <FormField
+              control={form.control}
               name="password"
-              id="password"
-              placeholder="••••••••"
-              className="focus:ring-primary-600 focus:border-primary-600 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500 sm:text-sm"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <div className="flex justify-between">
+                      <span>Password</span>
+                      {variant == "login" && (
+                        <span className="text-muted-foreground hover:underline">
+                          Forgot Password?
+                        </span>
+                      )}
+                    </div>
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-start">
-              <div className="flex h-5 items-center">
-                <input
-                  id="remember"
-                  aria-describedby="remember"
-                  type="checkbox"
-                  className="focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 h-4 w-4 rounded border border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800"
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label
-                  htmlFor="remember"
-                  className="text-gray-500 dark:text-gray-300"
-                >
-                  Remember me
-                </label>
-              </div>
-            </div>
-            <a
-              href="#"
-              className="text-primary-600 dark:text-primary-500 text-sm font-medium hover:underline"
-            >
-              Forgot password?
-            </a>
-          </div>
-          <Button type="submit" className="w-full">
-            Sign In
-          </Button>
-          <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-            Don’t have an account yet?{" "}
-            <a
-              href="#"
-              className="text-primary-600 dark:text-primary-500 font-medium hover:underline"
-            >
-              Sign up
-            </a>
-          </p>
-        </form>
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              Submit
+            </Button>
+            {variant == "login" && (
+              <p className="text-sm font-light text-muted-foreground">
+                Don’t have an account yet?{" "}
+                <a href="#" className="font-medium hover:underline">
+                  Sign up
+                </a>
+              </p>
+            )}
+          </form>
+        </Form>
       </div>
     </div>
   )

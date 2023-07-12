@@ -8,10 +8,7 @@ export type SetState<State> = (
   shouldReplace?: boolean | undefined,
   action?: string | { type: unknown } | undefined
 ) => void
-export type HandlerStore<State, Method> = (
-  set: SetState<State>,
-  get: () => State
-) => Method
+export type HandlerStore<State, Method> = (set: SetState<State>, get: () => State) => Method
 export type ReducerStore<State, Action> = (
   state: State,
   action: Action,
@@ -45,9 +42,7 @@ export function createStore<
     devtools: _devtools = true,
   } = (isOptions(reducerOrOptions) && reducerOrOptions) || options
   const immerReducer =
-    (reducerOrOptions &&
-      !isOptions(reducerOrOptions) &&
-      produce(reducerOrOptions)) ||
+    (reducerOrOptions && !isOptions(reducerOrOptions) && produce(reducerOrOptions)) ||
     (async () => ({}))
   return createSelectors(
     create(
@@ -55,17 +50,13 @@ export function createStore<
         devtools(
           immer(
             combine(initState, (set, get) => {
-              const setWithLogging = (
-                nextStateOrUpdater: Parameters<typeof set>[0]
-              ) => {
+              const setWithLogging = (nextStateOrUpdater: Parameters<typeof set>[0]) => {
                 const key = Object.keys(nextStateOrUpdater)
                 const values = Object.values(nextStateOrUpdater)
                 set(nextStateOrUpdater, false, {
                   type:
                     key.length == 1
-                      ? `set${
-                          key[0]!.charAt(0).toUpperCase() + key[0]!.slice(1)
-                        } to ${values[0]}`
+                      ? `set${key[0]!.charAt(0).toUpperCase() + key[0]!.slice(1)} to ${values[0]}`
                       : typeof nextStateOrUpdater == "function"
                       ? `set: ${extractString(nextStateOrUpdater.toString())}`
                       : `set: ${key.join(" | ")}`,
@@ -76,12 +67,7 @@ export function createStore<
                   isLogging && console.log("prev State", get())
                   set(
                     reducerOrOptions
-                      ? await immerReducer!(
-                          get() as unknown as Immutable<State>,
-                          action,
-                          set,
-                          get
-                        )
+                      ? await immerReducer!(get() as unknown as Immutable<State>, action, set, get)
                       : (state) => state,
                     false,
                     action
@@ -102,18 +88,14 @@ export function createStore<
                     Object.keys(initState).length > 3 ? "| ..." : ""
                   }`
                 : nameStore,
-            enabled:
-              _devtools &&
-              (process.env.NODE_ENV == "production" ? false : undefined),
+            enabled: _devtools && (process.env.NODE_ENV == "production" ? false : undefined),
             maxAge: 10,
             stateSanitizer: (state) => {
               for (const key in state) {
                 if (state[key] instanceof Element) {
                   return {
                     ...state,
-                    [key]: `<<_NODE_ELEMENT_${
-                      (state[key] as HTMLElement).nodeName
-                    }_>>`,
+                    [key]: `<<_NODE_ELEMENT_${(state[key] as HTMLElement).nodeName}_>>`,
                   }
                 }
               }
@@ -130,9 +112,7 @@ function isOptions(variable: any): variable is Options {
 }
 type WithSelectors<S> = S extends { getState: () => infer T }
   ? S & {
-      use: <K extends Array<keyof T>>(
-        ...args: K
-      ) => { [Key in K[number]]: T[Key] }
+      use: <K extends Array<keyof T>>(...args: K) => { [Key in K[number]]: T[Key] }
       useFunction: () => {
         [K in keyof T as T[K] extends Function ? K : never]: T[K]
       }
@@ -165,20 +145,14 @@ type DefaultSetState<T> = {
   ) => void | Promise<void>
 }
 
-function defaultSetState<T extends object, M>(
-  initstate: T,
-  set: any,
-  get: any
-) {
+function defaultSetState<T extends object, M>(initstate: T, set: any, get: any) {
   let $defaultSetState = {} as Record<string, (value: any) => void>
   for (const key in initstate) {
     if (Object.prototype.hasOwnProperty.call(initstate, key)) {
       const keyName = key.charAt(0).toUpperCase() + key.slice(1)
       $defaultSetState[`set${keyName}`] = async (valueOrCallback: any) => {
         const value =
-          typeof valueOrCallback == "function"
-            ? await valueOrCallback(get()[key])
-            : valueOrCallback
+          typeof valueOrCallback == "function" ? await valueOrCallback(get()[key]) : valueOrCallback
         set({ [key]: value }, false, {
           type: `set${keyName} to ${JSON.stringify(value)}`,
         })
