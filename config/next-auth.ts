@@ -51,8 +51,12 @@ export const nextAuthOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      console.log(token)
+    async jwt({ token, user, trigger, session }) {
+      if (trigger == "update" && session?.name) {
+        token.name = session.name
+        //update user new name to db
+        // await prisma.user.update({where:{id:token.id},data:{name:token.name}})
+      }
       if (user)
         return {
           id: user.id,
@@ -65,7 +69,16 @@ export const nextAuthOptions: AuthOptions = {
       // const user = await prisma.user.findUnique({ where: { email: token.email! } })
       // if (!user) throw new Error("Email does not exist")
       // session.user = user
-      return { ...session, user: { id: token.id, ...session.user, role: token.role } }
+      // return session
+      return {
+        ...session,
+        user: {
+          id: token.id,
+          ...session.user,
+          role: token.role,
+          // name: token.name trigger update
+        },
+      }
     },
   },
   pages: {
