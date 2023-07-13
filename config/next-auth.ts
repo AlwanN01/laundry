@@ -51,11 +51,21 @@ export const nextAuthOptions: AuthOptions = {
     }),
   ],
   callbacks: {
+    async jwt({ token, user }) {
+      console.log(token)
+      if (user)
+        return {
+          id: user.id,
+          ...token,
+          role: user.role,
+        }
+      return token
+    },
     async session({ session, token }) {
-      const user = await prisma.user.findUnique({ where: { email: token.email! } })
-      if (!user) throw new Error("Email does not exist")
-      session.user = user
-      return session
+      // const user = await prisma.user.findUnique({ where: { email: token.email! } })
+      // if (!user) throw new Error("Email does not exist")
+      // session.user = user
+      return { ...session, user: { id: token.id, ...session.user, role: token.role } }
     },
   },
   pages: {
