@@ -1,17 +1,29 @@
-import { PrismaAdapter } from "@auth/prisma-adapter"
+import { db } from "@/db/database"
+import SequelizeAdapter, { models } from "@auth/sequelize-adapter"
 import { compare } from "bcryptjs"
 import { type AuthOptions } from "next-auth"
 import { type Adapter } from "next-auth/adapters"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GithubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
+import * as pg from "pg"
+import { DataTypes, Sequelize } from "sequelize"
 
 import { env } from "@/lib/env"
 import { prisma } from "@/lib/prisma"
 import { loginSchema } from "@/app/(auth)/schemas/auth-schema"
 
+const sequelize = new Sequelize(env.DATABASE_URL, { dialectModule: pg })
 export const nextAuthOptions: AuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+  adapter: SequelizeAdapter(sequelize, {
+    models: {
+      User: sequelize.define("user", {
+        ...models.User,
+        role: DataTypes.STRING,
+        hashedPassword: DataTypes.STRING,
+      }),
+    },
+  }) as Adapter,
   providers: [
     GithubProvider({
       clientId: env.GITHUB_ID,
@@ -40,13 +52,19 @@ export const nextAuthOptions: AuthOptions = {
         const result = loginSchema.safeParse(credentials)
         if (!result.success) throw new Error("Please enter an email and password")
         const { data } = result
-        const user = await prisma.user.findUnique({
-          where: { email: result.data.email },
-        })
-        if (!user || !user.hashedPassword) throw new Error("No user found")
-        const matchPassword = await compare(data.password, user.hashedPassword)
+        const user = await db
+          .selectFrom("User")
+          .selectAll()
+          .where("email", "=", result.data.email)
+          .execute()
+        // const user = await prisma.user.findUnique({
+        //   where: { email: result.data.email },
+        // })
+        console.log(user)
+        if (!user[0] || !user[0].hashedPassword) throw new Error("No user found")
+        const matchPassword = await compare(data.password, user[0].hashedPassword)
         if (!matchPassword) throw new Error("Incorrect password")
-        return user
+        return user[0]
       },
     }),
   ],
