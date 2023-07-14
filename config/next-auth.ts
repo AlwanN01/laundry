@@ -52,33 +52,28 @@ export const nextAuthOptions: AuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      // The arguments user, account, profile and isNewUser are only passed the first time this callback is called on a new session, after the user signs in. In subsequent calls, only token will be available.
       if (trigger == "update" && session?.name) {
         token.name = session.name
         //update user new name to db
-        // await prisma.user.update({where:{id:token.id},data:{name:token.name}})
+        // await prisma.user.update({where:{id:token.id},data:})
       }
-      if (user)
-        return {
-          id: user.id,
-          ...token,
-          role: user.role,
-        }
+      if (user) {
+        token.id = user.id
+        token.role = user.role
+      }
+
       return token
     },
+    // token from jwt is passed frow jwt callback
     async session({ session, token }) {
       // const user = await prisma.user.findUnique({ where: { email: token.email! } })
       // if (!user) throw new Error("Email does not exist")
       // session.user = user
       // return session
-      return {
-        ...session,
-        user: {
-          id: token.id,
-          ...session.user,
-          role: token.role,
-          // name: token.name trigger update
-        },
-      }
+      session.user.id = token.id
+      session.user.role = token.role
+      return session
     },
   },
   pages: {
