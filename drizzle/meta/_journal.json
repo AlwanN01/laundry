@@ -1,0 +1,20 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1689452764901,
+      "tag": "0000_warm_jubilee",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1689454616670,
+      "tag": "0001_dry_brother_voodoo",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,17 +1,19 @@
-import { PrismaAdapter } from "@auth/prisma-adapter"
+import { users } from "@/db/schema"
 import { compare } from "bcryptjs"
+import { eq } from "drizzle-orm"
 import { type AuthOptions } from "next-auth"
-import { type Adapter } from "next-auth/adapters"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GithubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
 
+import db from "@/lib/drizzle"
+import DrizzleAdapter from "@/lib/drizzleAdapter"
 import { env } from "@/lib/env"
-import { prisma } from "@/lib/prisma"
 import { loginSchema } from "@/app/(auth)/schemas/auth-schema"
 
 export const nextAuthOptions: AuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+  // adapter: PrismaAdapter(prisma) as Adapter,
+  adapter: DrizzleAdapter(db),
   providers: [
     GithubProvider({
       clientId: env.GITHUB_ID,
@@ -40,8 +42,8 @@ export const nextAuthOptions: AuthOptions = {
         const result = loginSchema.safeParse(credentials)
         if (!result.success) throw new Error("Please enter an email and password")
         const { data } = result
-        const user = await prisma.user.findUnique({
-          where: { email: result.data.email },
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, result.data.email),
         })
         if (!user || !user.hashedPassword) throw new Error("No user found")
         const matchPassword = await compare(data.password, user.hashedPassword)
